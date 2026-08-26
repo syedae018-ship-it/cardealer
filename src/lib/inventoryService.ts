@@ -114,14 +114,34 @@ function saveLocalAnalytics(data: LocalAnalytics) {
 // --- Image Upload to Supabase Storage ---
 
 export async function uploadCarImage(file: File): Promise<string> {
-  // If Supabase is configured, upload directly to the 'car-images' bucket
+  // 1. Try server-side upload API first
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (res.ok) {
+      const result = await res.json();
+      if (result.success && result.url) {
+        return result.url;
+      }
+    }
+  } catch (err) {
+    console.warn('API upload error, trying client Supabase fallback:', err);
+  }
+
+  // 2. Try direct Supabase client upload
   if (isSupabaseConfigured() && supabase) {
     try {
       const ext = file.name.split('.').pop() || 'jpg';
       const fileName = `car_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${ext}`;
       const { data, error } = await supabase.storage.from('car-images').upload(fileName, file, {
         cacheControl: '3600',
-        upsert: false
+        upsert: true
       });
 
       if (!error && data) {
@@ -135,7 +155,7 @@ export async function uploadCarImage(file: File): Promise<string> {
     }
   }
 
-  // Fallback: Convert file directly to Base64 data URL for local storage
+  // 3. Fallback: Convert file directly to Base64 data URL for local storage
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onloadend = () => resolve(reader.result as string);
@@ -425,41 +445,62 @@ export async function createCar(carData: Omit<Car, 'id'>): Promise<Car> {
     updatedAt: new Date().toISOString()
   };
 
-  if (isSupabaseConfigured() && supabase) {
-    try {
-      const { data, error } = await supabase.from('cars').insert([{
-        name: newCar.name,
-        brand: newCar.brand,
-        model: newCar.model,
-        variant: newCar.variant,
-        category: newCar.category,
-        price: newCar.price,
-        price_value: newCar.priceValue,
-        year: newCar.year,
-        fuel: newCar.fuel,
-        transmission: newCar.transmission,
-        owners: newCar.owners,
-        km_driven: newCar.kmDriven,
-        colour: newCar.colour,
-        insurance: newCar.insurance,
-        fc: newCar.fc,
-        service_history: newCar.serviceHistory,
-        keys: newCar.keys,
-        manual: newCar.manual,
-        description: newCar.description,
-        status: newCar.status,
-        image: newCar.image,
-        images: newCar.images,
-        is_featured: newCar.isFeatured || false
-      }]).select().single();
-      if (!error && data) {
-        newCar.id = data.id;
+  const payload = {
+    name: newCar.name,
+    brand: newCar.brand,
+    model: newCar.model,
+    variant: newCar.variant,
+    category: newCar.category,
+    price: newCar.price,
+    price_value: newCar.priceValue,
+    year: newCar.year,
+    fuel: newCar.fuel,
+    transmission: newCar.transmission,
+    owners: newCar.owners,
+    km_driven: newCar.kmDriven,
+    colour: newCar.colour,
+    insurance: newCar.insurance,
+    fc: newCar.fc,
+    service_history: newCar.serviceHistory,
+    keys: newCar.keys,
+    manual: newCar.manual,
+    description: newCar.description,
+    status: newCar.status,
+    image: newCar.image,
+    images: newCar.images,
+    is_featured: newCar.isFeatured || false
+  };
+
+  // 1. Try server-side API first
+  try {
+    const res = await fetch('/api/cars', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) {
+      const result = await res.json();
+      if (result.success && result.data) {
+        newCar.id = result.data.id;
       }
-    } catch (err) {
-      console.warn('Supabase create failed:', err);
+    }
+  } catch (apiErr) {
+    console.warn('API create failed, trying client Supabase fallback:', apiErr);
+
+    // 2. Client fallback
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        const { data, error } = await supabase.from('cars').insert([payload]).select().single();
+        if (!error && data) {
+          newCar.id = data.id;
+        }
+      } catch (err) {
+        console.warn('Supabase create failed:', err);
+      }
     }
   }
 
+  // 3. Update local store
   const local = getLocalCars();
   local.unshift(newCar);
   saveLocalCars(local);
@@ -467,35 +508,44 @@ export async function createCar(carData: Omit<Car, 'id'>): Promise<Car> {
 }
 
 export async function updateCar(id: string, updates: Partial<Car>): Promise<Car | null> {
-  if (isSupabaseConfigured() && supabase) {
-    try {
-      const dbUpdates: any = { updated_at: new Date().toISOString() };
-      if (updates.name !== undefined) dbUpdates.name = updates.name;
-      if (updates.brand !== undefined) dbUpdates.brand = updates.brand;
-      if (updates.model !== undefined) dbUpdates.model = updates.model;
-      if (updates.variant !== undefined) dbUpdates.variant = updates.variant;
-      if (updates.category !== undefined) dbUpdates.category = updates.category;
-      if (updates.price !== undefined) dbUpdates.price = updates.price;
-      if (updates.priceValue !== undefined) dbUpdates.price_value = updates.priceValue;
-      if (updates.year !== undefined) dbUpdates.year = updates.year;
-      if (updates.fuel !== undefined) dbUpdates.fuel = updates.fuel;
-      if (updates.transmission !== undefined) dbUpdates.transmission = updates.transmission;
-      if (updates.owners !== undefined) dbUpdates.owners = updates.owners;
-      if (updates.kmDriven !== undefined) dbUpdates.km_driven = updates.kmDriven;
-      if (updates.colour !== undefined) dbUpdates.colour = updates.colour;
-      if (updates.insurance !== undefined) dbUpdates.insurance = updates.insurance;
-      if (updates.fc !== undefined) dbUpdates.fc = updates.fc;
-      if (updates.serviceHistory !== undefined) dbUpdates.service_history = updates.serviceHistory;
-      if (updates.keys !== undefined) dbUpdates.keys = updates.keys;
-      if (updates.manual !== undefined) dbUpdates.manual = updates.manual;
-      if (updates.description !== undefined) dbUpdates.description = updates.description;
-      if (updates.status !== undefined) dbUpdates.status = updates.status;
-      if (updates.image !== undefined) dbUpdates.image = updates.image;
-      if (updates.images !== undefined) dbUpdates.images = updates.images;
+  const dbUpdates: any = {};
+  if (updates.name !== undefined) dbUpdates.name = updates.name;
+  if (updates.brand !== undefined) dbUpdates.brand = updates.brand;
+  if (updates.model !== undefined) dbUpdates.model = updates.model;
+  if (updates.variant !== undefined) dbUpdates.variant = updates.variant;
+  if (updates.category !== undefined) dbUpdates.category = updates.category;
+  if (updates.price !== undefined) dbUpdates.price = updates.price;
+  if (updates.priceValue !== undefined) dbUpdates.price_value = updates.priceValue;
+  if (updates.year !== undefined) dbUpdates.year = updates.year;
+  if (updates.fuel !== undefined) dbUpdates.fuel = updates.fuel;
+  if (updates.transmission !== undefined) dbUpdates.transmission = updates.transmission;
+  if (updates.owners !== undefined) dbUpdates.owners = updates.owners;
+  if (updates.kmDriven !== undefined) dbUpdates.km_driven = updates.kmDriven;
+  if (updates.colour !== undefined) dbUpdates.colour = updates.colour;
+  if (updates.insurance !== undefined) dbUpdates.insurance = updates.insurance;
+  if (updates.fc !== undefined) dbUpdates.fc = updates.fc;
+  if (updates.serviceHistory !== undefined) dbUpdates.service_history = updates.serviceHistory;
+  if (updates.keys !== undefined) dbUpdates.keys = updates.keys;
+  if (updates.manual !== undefined) dbUpdates.manual = updates.manual;
+  if (updates.description !== undefined) dbUpdates.description = updates.description;
+  if (updates.status !== undefined) dbUpdates.status = updates.status;
+  if (updates.image !== undefined) dbUpdates.image = updates.image;
+  if (updates.images !== undefined) dbUpdates.images = updates.images;
 
-      await supabase.from('cars').update(dbUpdates).eq('id', id);
-    } catch (err) {
-      console.warn('Supabase update failed:', err);
+  // 1. Try server-side API
+  try {
+    await fetch('/api/cars', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, ...dbUpdates })
+    });
+  } catch (apiErr) {
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        await supabase.from('cars').update(dbUpdates).eq('id', id);
+      } catch (err) {
+        console.warn('Supabase update failed:', err);
+      }
     }
   }
 
@@ -508,11 +558,18 @@ export async function updateCar(id: string, updates: Partial<Car>): Promise<Car 
 }
 
 export async function deleteCar(id: string): Promise<boolean> {
-  if (isSupabaseConfigured() && supabase) {
-    try {
-      await supabase.from('cars').delete().eq('id', id);
-    } catch (err) {
-      console.warn('Supabase delete failed:', err);
+  // 1. Try server-side API
+  try {
+    await fetch(`/api/cars?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE'
+    });
+  } catch (apiErr) {
+    if (isSupabaseConfigured() && supabase) {
+      try {
+        await supabase.from('cars').delete().eq('id', id);
+      } catch (err) {
+        console.warn('Supabase delete failed:', err);
+      }
     }
   }
 

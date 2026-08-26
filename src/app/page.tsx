@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { Hero } from '@/components/Hero';
 import { CarCard } from '@/components/CarCard';
+import { InventoryFilterBar, FilterState } from '@/components/InventoryFilterBar';
 import { Footer } from '@/components/Footer';
 import { fetchCars, recordPageView } from '@/lib/inventoryService';
 import { Car } from '@/lib/types';
@@ -27,11 +28,13 @@ const CATEGORIES = ['All', 'Under ₹3L', 'Hatchbacks', 'Sedans', 'SUVs'];
 export default function HomePage() {
   const [cars, setCars] = useState<Car[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [selectedFuel, setSelectedFuel] = useState('All');
-  const [selectedTransmission, setSelectedTransmission] = useState('All');
-  const [sortBy, setSortBy] = useState<'newest' | 'price-low' | 'price-high' | 'year-newest'>('newest');
+  const [filters, setFilters] = useState<FilterState>({
+    search: '',
+    category: 'All',
+    fuel: 'All',
+    transmission: 'All',
+    sort: 'newest'
+  });
 
   useEffect(() => {
     recordPageView('/');
@@ -50,8 +53,8 @@ export default function HomePage() {
 
   const filteredCars = publicCars.filter((car) => {
     // Search query
-    if (search.trim()) {
-      const q = search.toLowerCase();
+    if (filters.search.trim()) {
+      const q = filters.search.toLowerCase();
       const match = 
         car.name.toLowerCase().includes(q) ||
         car.brand.toLowerCase().includes(q) ||
@@ -61,41 +64,33 @@ export default function HomePage() {
     }
 
     // Category
-    if (selectedCategory !== 'All') {
-      if (selectedCategory === 'Under ₹3L') {
+    if (filters.category !== 'All') {
+      if (filters.category === 'Under ₹3L') {
         if (car.priceValue >= 300000) return false;
-      } else if (car.category.toLowerCase() !== selectedCategory.toLowerCase()) {
+      } else if (car.category.toLowerCase() !== filters.category.toLowerCase()) {
         return false;
       }
     }
 
     // Fuel
-    if (selectedFuel !== 'All' && car.fuel.toLowerCase() !== selectedFuel.toLowerCase()) {
+    if (filters.fuel !== 'All' && car.fuel.toLowerCase() !== filters.fuel.toLowerCase()) {
       return false;
     }
 
     // Transmission
-    if (selectedTransmission !== 'All' && car.transmission.toLowerCase() !== selectedTransmission.toLowerCase()) {
+    if (filters.transmission !== 'All' && car.transmission.toLowerCase() !== filters.transmission.toLowerCase()) {
       return false;
     }
 
     return true;
   }).sort((a, b) => {
-    if (sortBy === 'price-low') return a.priceValue - b.priceValue;
-    if (sortBy === 'price-high') return b.priceValue - a.priceValue;
-    if (sortBy === 'year-newest') return b.year - a.year;
+    if (filters.sort === 'price-low') return a.priceValue - b.priceValue;
+    if (filters.sort === 'price-high') return b.priceValue - a.priceValue;
+    if (filters.sort === 'year-newest') return b.year - a.year;
     return 0; // newest
   });
 
   const availableCount = publicCars.filter(c => c.status === 'AVAILABLE').length;
-
-  const resetFilters = () => {
-    setSearch('');
-    setSelectedCategory('All');
-    setSelectedFuel('All');
-    setSelectedTransmission('All');
-    setSortBy('newest');
-  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background text-foreground">
@@ -108,7 +103,7 @@ export default function HomePage() {
       <main id="inventory" className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16 w-full">
         
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
           <div>
             <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-brand-orange mb-1">
               <Sparkles className="w-3.5 h-3.5" />
@@ -127,114 +122,13 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Search & Filter Controls Bar */}
-        <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4 mb-8">
-          
-          {/* Search Input */}
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by make, model or variant (e.g. i20, Ritz, Innova, Petrol, Automatic)..."
-              className="w-full pl-11 pr-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-orange/30 focus:border-brand-orange transition-colors"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch('')}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-neutral-400 hover:text-neutral-700 dark:hover:text-white"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-
-          {/* Quick Category Chips */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-            {CATEGORIES.map((cat) => {
-              const active = selectedCategory === cat;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-150 ${
-                    active
-                      ? 'bg-brand-orange text-white shadow-sm shadow-brand-orange/30 scale-[1.02]'
-                      : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-                  }`}
-                >
-                  {cat}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Advanced Dropdowns & Reset */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-neutral-100 dark:border-neutral-800">
-            <div className="flex flex-wrap items-center gap-3">
-              
-              {/* Fuel Dropdown */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-neutral-500">Fuel:</span>
-                <select
-                  value={selectedFuel}
-                  onChange={(e) => setSelectedFuel(e.target.value)}
-                  aria-label="Filter by Fuel type"
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-200 focus:outline-none"
-                >
-                  <option value="All">All Fuel</option>
-                  <option value="Petrol">Petrol</option>
-                  <option value="Diesel">Diesel</option>
-                </select>
-              </div>
-
-              {/* Transmission Dropdown */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-neutral-500">Gear:</span>
-                <select
-                  value={selectedTransmission}
-                  onChange={(e) => setSelectedTransmission(e.target.value)}
-                  aria-label="Filter by Transmission type"
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-200 focus:outline-none"
-                >
-                  <option value="All">All Gears</option>
-                  <option value="Manual">Manual</option>
-                  <option value="Automatic">Automatic</option>
-                </select>
-              </div>
-
-              {/* Clear filters */}
-              {(search || selectedCategory !== 'All' || selectedFuel !== 'All' || selectedTransmission !== 'All') && (
-                <button
-                  onClick={resetFilters}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-brand-orange hover:underline"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>Reset filters</span>
-                </button>
-              )}
-            </div>
-
-            {/* Sort Dropdown */}
-            <div className="flex items-center gap-2 ml-auto">
-              <span className="text-xs font-semibold text-neutral-500">Sort by:</span>
-              <select
-                value={sortBy}
-                onChange={(e: any) => setSortBy(e.target.value)}
-                aria-label="Sort inventory by"
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-200 focus:outline-none"
-              >
-                <option value="newest">Newest Listed</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="year-newest">Year: Latest Model</option>
-              </select>
-            </div>
-
-          </div>
-
-        </div>
+        {/* Compact & Customizable Filter Bar */}
+        <InventoryFilterBar
+          filters={filters}
+          onFilterChange={setFilters}
+          categories={CATEGORIES}
+          totalResults={filteredCars.length}
+        />
 
         {/* Vehicles 4-Column Grid */}
         {loading ? (
@@ -277,7 +171,7 @@ export default function HomePage() {
               </a>
             ) : (
               <button
-                onClick={resetFilters}
+                onClick={() => setFilters({ search: '', category: 'All', fuel: 'All', transmission: 'All', sort: 'newest' })}
                 className="px-5 py-2.5 rounded-xl text-xs font-bold bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 hover:bg-neutral-800 transition-colors"
               >
                 Show All Available Cars
