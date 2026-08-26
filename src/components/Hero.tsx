@@ -101,7 +101,7 @@ export function Hero({ availableCount }: HeroProps) {
             {/* Background Car Photo with subtle diagonal clip on desktop */}
             <div className="absolute inset-0 w-full h-full rounded-3xl lg:rounded-none overflow-hidden lg:[clip-path:polygon(8%_0,_100%_0,_100%_100%,_0%_100%)]">
               <Image
-                src="https://images.unsplash.com/photo-1621007947382-bb3c3994e3fd?auto=format&fit=crop&w=1200&q=85"
+                src="/images/hero-car.jpg"
                 alt="Verified Used Car Bangalore - Syed Sabeer Riyaz"
                 fill
                 priority
