@@ -301,6 +301,51 @@ export async function fetchAnalyticsStats(): Promise<AnalyticsStats> {
 // --- Service API ---
 
 export async function fetchCars(filters?: Partial<FilterState>): Promise<Car[]> {
+  // 1. Try server-side API first (guaranteed cloud sync on mobile & desktop)
+  try {
+    const res = await fetch('/api/cars', { cache: 'no-store' });
+    if (res.ok) {
+      const result = await res.json();
+      if (result.success && Array.isArray(result.data)) {
+        if (result.data.length > 0) {
+          return result.data.map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            brand: item.brand,
+            model: item.model,
+            variant: item.variant,
+            category: item.category,
+            price: item.price,
+            priceValue: Number(item.price_value),
+            year: item.year,
+            fuel: item.fuel,
+            transmission: item.transmission,
+            owners: item.owners,
+            kmDriven: item.km_driven,
+            colour: item.colour,
+            insurance: item.insurance,
+            fc: item.fc,
+            serviceHistory: item.service_history,
+            keys: item.keys,
+            manual: item.manual,
+            description: item.description,
+            status: item.status,
+            image: item.image,
+            images: item.images || [item.image],
+            isFeatured: item.is_featured,
+            viewsCount: item.views_count || 0,
+            whatsappClicks: item.whatsapp_clicks || 0,
+            createdAt: item.created_at,
+            updatedAt: item.updated_at
+          }));
+        }
+      }
+    }
+  } catch (apiErr) {
+    console.warn('API fetch failed, falling back to direct Supabase:', apiErr);
+  }
+
+  // 2. Direct Supabase client fallback
   if (isSupabaseConfigured() && supabase) {
     try {
       let query = supabase.from('cars').select('*').order('created_at', { ascending: false });
