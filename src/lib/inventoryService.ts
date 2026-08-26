@@ -437,6 +437,7 @@ export async function fetchCars(filters?: Partial<FilterState>): Promise<Car[]> 
 }
 
 export async function fetchCarById(id: string): Promise<Car | null> {
+  // 1. Try server API / Supabase
   if (isSupabaseConfigured() && supabase) {
     try {
       const { data, error } = await supabase.from('cars').select('*').eq('id', id).single();
@@ -475,8 +476,20 @@ export async function fetchCarById(id: string): Promise<Car | null> {
     }
   }
 
+  // 2. Fallback to local store
   const cars = getLocalCars();
-  return cars.find(c => c.id === id) || null;
+  const foundInLocal = cars.find(c => c.id === id || c.id.toLowerCase() === id.toLowerCase());
+  if (foundInLocal) return foundInLocal;
+
+  // 3. Fallback to INITIAL_INVENTORY
+  const foundInInitial = INITIAL_INVENTORY.find(c => c.id === id || c.id.toLowerCase() === id.toLowerCase());
+  if (foundInInitial) return foundInInitial;
+
+  // 4. If ID is numeric index like '1' or 'car-1'
+  const indexMatch = INITIAL_INVENTORY.find(c => c.id.endsWith(id) || id.endsWith(c.id));
+  if (indexMatch) return indexMatch;
+
+  return null;
 }
 
 export async function createCar(carData: Omit<Car, 'id'>): Promise<Car> {

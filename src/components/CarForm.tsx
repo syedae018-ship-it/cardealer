@@ -502,68 +502,91 @@ export function CarForm({ initialData, isEdit = false }: CarFormProps) {
           <span className="text-xs text-neutral-400">First image will be the primary cover</span>
         </div>
 
-        {/* Hidden File Input */}
+        {/* Native File Input (Accessible and linked via htmlFor) */}
         <input
+          id="car-photo-upload"
           type="file"
           ref={fileInputRef}
           onChange={handleFileUpload}
-          accept="image/*"
+          accept="image/png, image/jpeg, image/jpg, image/webp, image/*"
           multiple
-          className="hidden"
+          className="sr-only"
         />
 
-        {/* Upload Dropzone */}
-        <div
-          onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-neutral-300 dark:border-neutral-700 hover:border-brand-orange dark:hover:border-brand-orange rounded-2xl p-8 text-center cursor-pointer transition-colors bg-neutral-50/50 dark:bg-neutral-950/50 flex flex-col items-center justify-center gap-3"
+        {/* Upload Dropzone with Native Label Wrapper */}
+        <label
+          htmlFor="car-photo-upload"
+          className="border-2 border-dashed border-neutral-300 dark:border-neutral-700 hover:border-brand-orange dark:hover:border-brand-orange rounded-2xl p-6 sm:p-8 text-center cursor-pointer transition-all bg-neutral-50/50 dark:bg-neutral-950/50 hover:bg-orange-50/20 flex flex-col items-center justify-center gap-3 touch-manipulation active:scale-[0.99]"
         >
-          <div className="w-12 h-12 rounded-2xl bg-brand-orange-100 dark:bg-brand-orange-950/60 text-brand-orange flex items-center justify-center shadow-sm">
-            {uploadingImage ? <Loader2 className="w-6 h-6 animate-spin" /> : <Camera className="w-6 h-6" />}
+          <div className="w-14 h-14 rounded-2xl bg-orange-100 dark:bg-orange-950/60 text-brand-orange flex items-center justify-center shadow-sm pointer-events-none">
+            {uploadingImage ? <Loader2 className="w-7 h-7 animate-spin" /> : <Camera className="w-7 h-7" />}
           </div>
-          <div className="space-y-1">
-            <p className="text-sm font-bold text-neutral-900 dark:text-white">
-              {uploadingImage ? 'Uploading image to Supabase storage...' : 'Click to Upload Photos from Phone / Device'}
+          <div className="space-y-1.5 pointer-events-none">
+            <p className="text-sm sm:text-base font-extrabold text-neutral-900 dark:text-white">
+              {uploadingImage ? 'Uploading photo to Supabase storage...' : 'Tap to Choose Photos from Gallery / Camera'}
             </p>
-            <p className="text-xs text-neutral-500">
-              Supports JPEG, PNG, WEBP (Multiple files allowed)
+            <p className="text-xs text-neutral-500 max-w-sm mx-auto">
+              Select multiple photos from your mobile gallery or files. Supports JPG, PNG, WEBP.
             </p>
           </div>
-        </div>
+
+          <div className="mt-2 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-neutral-900 dark:bg-white text-white dark:text-neutral-950 shadow-sm pointer-events-none">
+            <Upload className="w-3.5 h-3.5" />
+            <span>Select Photos</span>
+          </div>
+        </label>
 
         {/* Photo Gallery Grid */}
         {images.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
-            {images.map((src, index) => (
-              <div
-                key={index}
-                className="relative aspect-[4/3] rounded-xl overflow-hidden border border-neutral-200 dark:border-neutral-800 group bg-neutral-100 dark:bg-neutral-800"
-              >
-                <Image src={src} alt="Preview" fill className="object-cover" />
-                
-                {index === 0 ? (
-                  <span className="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold bg-brand-orange text-white shadow-sm">
-                    COVER IMAGE
-                  </span>
-                ) : (
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center justify-between text-xs font-bold text-neutral-700 dark:text-neutral-300">
+              <span>Attached Photos ({images.length})</span>
+              <label htmlFor="car-photo-upload" className="text-brand-orange hover:underline cursor-pointer flex items-center gap-1">
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add More Photos</span>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {images.map((src, index) => (
+                <div
+                  key={index}
+                  className="relative aspect-[4/3] rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-800 group bg-neutral-100 dark:bg-neutral-800 shadow-sm"
+                >
+                  <Image src={src} alt="Preview" fill className="object-cover" />
+                  
+                  {index === 0 ? (
+                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-black bg-brand-orange text-white shadow-md">
+                      PRIMARY COVER
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSetPrimary(index);
+                      }}
+                      className="absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-bold bg-black/80 text-white hover:bg-brand-orange transition-all opacity-90 sm:opacity-0 sm:group-hover:opacity-100"
+                    >
+                      Set Cover
+                    </button>
+                  )}
+
                   <button
                     type="button"
-                    onClick={() => handleSetPrimary(index)}
-                    className="absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold bg-black/70 text-white opacity-0 group-hover:opacity-100 hover:bg-brand-orange transition-all"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveImage(index);
+                    }}
+                    className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/80 text-white hover:bg-red-600 transition-colors opacity-90 sm:opacity-0 sm:group-hover:opacity-100"
+                    title="Remove photo"
+                    aria-label="Remove photo"
                   >
-                    Set as Cover
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => handleRemoveImage(index)}
-                  className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/70 text-white hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
-                  title="Remove photo"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

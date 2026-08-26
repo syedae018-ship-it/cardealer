@@ -132,13 +132,13 @@ export default function HomePage() {
 
         {/* Grid of Available Cars */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-pulse">
-            {[1, 2, 3, 4].map((n) => (
-              <div key={n} className="h-96 rounded-3xl bg-neutral-200 dark:bg-neutral-800" />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 animate-pulse">
+            {[1, 2, 3, 4, 5, 6].map((n) => (
+              <div key={n} className="h-72 sm:h-80 rounded-2xl sm:rounded-3xl bg-neutral-200 dark:bg-neutral-800" />
             ))}
           </div>
         ) : filteredCars.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
             {filteredCars.map((car) => (
               <CarCard key={car.id} car={car} />
             ))}
