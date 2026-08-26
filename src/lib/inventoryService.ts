@@ -3,10 +3,10 @@ import { Car, DealershipSettings, Enquiry, FilterState, AnalyticsStats } from '.
 import { INITIAL_INVENTORY, INITIAL_ENQUIRIES, INITIAL_SETTINGS } from './mockData';
 
 const STORAGE_KEYS = {
-  CARS: 'quality_used_cars_inventory_v4_clean',
-  ENQUIRIES: 'quality_used_cars_enquiries_v4_clean',
-  SETTINGS: 'quality_used_cars_settings_v4_clean',
-  ANALYTICS: 'quality_used_cars_analytics_v4_clean',
+  CARS: 'quality_used_cars_inventory_v5_six_cars',
+  ENQUIRIES: 'quality_used_cars_enquiries_v5_clean',
+  SETTINGS: 'quality_used_cars_settings_v5_clean',
+  ANALYTICS: 'quality_used_cars_analytics_v5_clean',
 };
 
 // --- Local Storage Helpers ---

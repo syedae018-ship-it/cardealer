@@ -15,14 +15,14 @@ export function CarCard({ car }: CarCardProps) {
   const isAvailable = car.status === 'AVAILABLE';
   const isReserved = car.status === 'RESERVED';
 
-  const waMessage = `Hi Sabir, I'm interested in the ${car.name} listed at ${car.price}.\n\nYear: ${car.year} | Fuel: ${car.fuel} | Transmission: ${car.transmission}\nIs this car available for viewing?`;
+  const waMessage = `Hi Syed, I'm interested in the ${car.name} listed at ${car.price}.\n\nYear: ${car.year} | Fuel: ${car.fuel} | Transmission: ${car.transmission} | KM: ${car.kmDriven || 'N/A'}\nIs this car available for viewing in Bangalore?`;
   const waUrl = `https://wa.me/919999999999?text=${encodeURIComponent(waMessage)}`;
 
   return (
-    <div className="group rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-card hover:shadow-card-hover dark:hover:shadow-card-dark transition-all duration-300 flex flex-col justify-between">
+    <div className="group rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm hover:shadow-xl dark:hover:shadow-black/50 transition-all duration-300 flex flex-col justify-between">
       
       {/* Image Area with Badges */}
-      <Link href={`/cars/${car.id}`} className="relative block aspect-[4/3] w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+      <Link href={`/cars/${car.id}`} className="relative block aspect-[16/10] w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
         <Image
           src={car.image || 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=800&q=80'}
           alt={car.name}

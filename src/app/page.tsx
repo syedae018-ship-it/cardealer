@@ -130,15 +130,15 @@ export default function HomePage() {
           totalResults={filteredCars.length}
         />
 
-        {/* Vehicles 4-Column Grid */}
+        {/* Grid of Available Cars */}
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-pulse">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-              <div key={n} className="h-80 rounded-2xl bg-neutral-200 dark:bg-neutral-800" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-pulse">
+            {[1, 2, 3, 4].map((n) => (
+              <div key={n} className="h-96 rounded-3xl bg-neutral-200 dark:bg-neutral-800" />
             ))}
           </div>
         ) : filteredCars.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {filteredCars.map((car) => (
               <CarCard key={car.id} car={car} />
             ))}
